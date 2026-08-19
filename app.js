@@ -11,13 +11,53 @@ const CATEGORY_KEYS = {
   공부: "study",
 };
 
-// 메모리 상의 할 일 목록 상태 (이 단계에서는 localStorage 연동 없음)
+// localStorage 키 (요구사항: 할 일 배열은 "todos" 키에 JSON으로 저장)
+const STORAGE_KEY = "todos";
+// 필터 선택도 새로고침 후 유지되도록 별도 키에 보조 저장
+const FILTER_STORAGE_KEY = "todoFilter";
+const FILTER_VALUES = ["all", "work", "personal", "study"];
+
+// 메모리 상의 할 일 목록 상태 (loadTodos()로 초기화됨)
 let todos = [];
+
+// 현재 선택된 필터 (all/work/personal/study) - 데이터 자체와는 분리된 뷰 상태
+let currentFilter = "all";
+
+function loadTodos() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveTodos() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+}
+
+function loadFilter() {
+  try {
+    const raw = localStorage.getItem(FILTER_STORAGE_KEY);
+    return FILTER_VALUES.includes(raw) ? raw : "all";
+  } catch (e) {
+    return "all";
+  }
+}
+
+function saveFilter() {
+  localStorage.setItem(FILTER_STORAGE_KEY, currentFilter);
+}
 
 const todoInput = document.getElementById("todo-input");
 const categorySelect = document.getElementById("category-select");
 const addBtn = document.getElementById("add-btn");
 const todoListEl = document.getElementById("todo-list");
+const filterBtns = document.querySelectorAll(".filter-btn");
+const progressText = document.getElementById("progress-text");
+const progressBarFill = document.getElementById("progress-bar-fill");
 
 function createId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -41,19 +81,19 @@ function addTodo() {
   todos.push(todo);
   todoInput.value = "";
   todoInput.focus();
-  renderTodos();
+  refresh();
 }
 
 function toggleComplete(id) {
   const todo = todos.find((t) => t.id === id);
   if (!todo) return;
   todo.completed = !todo.completed;
-  renderTodos();
+  refresh();
 }
 
 function deleteTodo(id) {
   todos = todos.filter((t) => t.id !== id);
-  renderTodos();
+  refresh();
 }
 
 function editTodo(id, newTitle) {
@@ -62,7 +102,7 @@ function editTodo(id, newTitle) {
   const todo = todos.find((t) => t.id === id);
   if (!todo) return;
   todo.title = title;
-  renderTodos();
+  refresh();
 }
 
 function enterEditMode(li, todo) {
@@ -130,11 +170,46 @@ function createTodoItemEl(todo) {
   return li;
 }
 
+// 필터링: 데이터(todos)는 건드리지 않고 화면에 보여줄 부분집합만 계산
+function getFilteredTodos() {
+  if (currentFilter === "all") return todos;
+  return todos.filter(
+    (todo) => CATEGORY_KEYS[todo.category] === currentFilter
+  );
+}
+
+// 렌더링: 현재 필터가 적용된 목록을 DOM에 그리기만 함
 function renderTodos() {
+  const visibleTodos = getFilteredTodos();
   todoListEl.innerHTML = "";
-  todos.forEach((todo) => {
+  visibleTodos.forEach((todo) => {
     todoListEl.appendChild(createTodoItemEl(todo));
   });
+}
+
+// 진행률: 필터와 무관하게 전체 todos 기준으로 계산
+function updateProgress() {
+  const total = todos.length;
+  const completedCount = todos.filter((todo) => todo.completed).length;
+  const percent = total === 0 ? 0 : Math.round((completedCount / total) * 100);
+
+  progressText.textContent = `${total}개 중 ${completedCount}개 완료 (${percent}%)`;
+  progressBarFill.style.width = `${percent}%`;
+}
+
+function refresh() {
+  renderTodos();
+  updateProgress();
+  saveTodos();
+}
+
+function setFilter(filter) {
+  currentFilter = filter;
+  filterBtns.forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.filter === filter);
+  });
+  renderTodos();
+  saveFilter();
 }
 
 addBtn.addEventListener("click", addTodo);
@@ -142,4 +217,18 @@ todoInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") addTodo();
 });
 
-renderTodos();
+filterBtns.forEach((btn) => {
+  btn.addEventListener("click", () => setFilter(btn.dataset.filter));
+});
+
+function init() {
+  todos = loadTodos();
+  currentFilter = loadFilter();
+  filterBtns.forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.filter === currentFilter);
+  });
+  renderTodos();
+  updateProgress();
+}
+
+init();
