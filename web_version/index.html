@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>할 일 관리 앱 - 웹 버전</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- 헤더: 앱 제목 + 다크모드 토글 + 진행률 -->
+    <header class="app-header">
+      <div class="header-top">
+        <div class="header-title-group">
+          <h1 class="app-title">할 일 관리</h1>
+          <span id="remaining-badge" class="remaining-badge">0개 남음</span>
+        </div>
+        <label class="theme-toggle" for="theme-toggle-input" title="다크 모드 전환 (Alt+0)">
+          <input
+            type="checkbox"
+            id="theme-toggle-input"
+            class="theme-toggle-input"
+            aria-label="다크 모드 전환"
+          />
+          <span class="theme-toggle-track" aria-hidden="true">
+            <span class="theme-toggle-thumb"></span>
+          </span>
+        </label>
+      </div>
+      <div class="progress-area">
+        <span id="progress-text" class="progress-text">0 / 0 완료</span>
+        <div class="progress-bar">
+          <div id="progress-bar-fill" class="progress-bar-fill"></div>
+        </div>
+      </div>
+    </header>
+
+    <div class="app-body">
+      <!-- 사이드바: 입력/검색/필터 -->
+      <aside class="sidebar">
+        <section class="input-area">
+          <input
+            type="text"
+            id="todo-input"
+            class="todo-input"
+            placeholder="할 일을 입력하세요 (Alt+N)"
+          />
+          <select id="category-select" class="category-select">
+            <option value="work">업무</option>
+            <option value="personal">개인</option>
+            <option value="study">공부</option>
+          </select>
+          <button id="add-btn" class="add-btn" type="button">추가</button>
+        </section>
+
+        <section class="search-area">
+          <input
+            type="search"
+            id="search-input"
+            class="search-input"
+            placeholder="할 일 검색"
+            aria-label="할 일 검색"
+          />
+        </section>
+
+        <nav class="filter-area">
+          <button class="filter-btn active" type="button" data-filter="all">전체</button>
+          <button class="filter-btn" type="button" data-filter="work">업무</button>
+          <button class="filter-btn" type="button" data-filter="personal">개인</button>
+          <button class="filter-btn" type="button" data-filter="study">공부</button>
+        </nav>
+      </aside>
+
+      <!-- 메인: 할 일 목록 + 완료된 항목 -->
+      <main class="main-content">
+        <div class="list-area">
+          <ul id="todo-list" class="todo-list">
+            <!-- 할 일 항목이 여기에 동적으로 렌더링됩니다 -->
+          </ul>
+        </div>
+
+        <section class="completed-area">
+          <div class="completed-header">
+            <button
+              id="completed-toggle"
+              class="completed-toggle"
+              type="button"
+              aria-expanded="false"
+              aria-controls="completed-list"
+            >
+              <span class="completed-toggle-label">완료된 항목</span>
+              <span id="completed-count" class="completed-count">0</span>
+              <span class="completed-toggle-icon" aria-hidden="true">▾</span>
+            </button>
+            <button id="clear-completed-btn" class="clear-completed-btn" type="button">
+              모두 삭제
+            </button>
+          </div>
+          <ul id="completed-list" class="todo-list completed-list collapsed">
+            <!-- 완료된 항목이 여기에 동적으로 렌더링됩니다 -->
+          </ul>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
