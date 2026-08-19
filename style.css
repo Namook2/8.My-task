@@ -167,6 +167,7 @@ body {
 
 .todo-item-category {
   font-size: 12px;
+  font-weight: 600;
   padding: 2px 8px;
   border-radius: 10px;
   color: #fff;
@@ -190,24 +191,93 @@ body {
   color: #e25c5c;
 }
 
-/* 카테고리별 색상 */
+/* 카테고리별 색상 (흰 글자와의 대비를 고려해 채도/명도 조정) */
 .category-work {
-  border-left-color: #4a90e2;
+  border-left-color: #3b5fd9;
 }
 .category-work .todo-item-category {
-  background-color: #4a90e2;
+  background-color: #3b5fd9;
 }
 
 .category-personal {
-  border-left-color: #7ac47f;
+  border-left-color: #2f9e5c;
 }
 .category-personal .todo-item-category {
-  background-color: #7ac47f;
+  background-color: #2f9e5c;
 }
 
 .category-study {
-  border-left-color: #f5a623;
+  border-left-color: #c2670f;
 }
 .category-study .todo-item-category {
-  background-color: #f5a623;
+  background-color: #c2670f;
+}
+
+/* 빈 상태 안내 */
+.empty-state {
+  text-align: center;
+  padding: 32px 12px;
+  color: #999;
+  font-size: 14px;
+}
+
+/* 반응형: 모바일 너비 */
+@media (max-width: 480px) {
+  body {
+    padding: 16px 8px;
+  }
+
+  .app {
+    padding: 16px;
+    border-radius: 8px;
+  }
+
+  .app-title {
+    font-size: 20px;
+  }
+
+  .input-area {
+    flex-direction: column;
+  }
+
+  .category-select {
+    width: 100%;
+  }
+
+  .add-btn {
+    width: 100%;
+    padding: 12px 16px;
+  }
+
+  .filter-area {
+    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    flex: 1 1 calc(50% - 8px);
+  }
+
+  .todo-item {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .todo-item-title,
+  .todo-item-edit-input {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .todo-item-category {
+    font-size: 11px;
+    padding: 2px 6px;
+  }
+
+  .todo-item-edit,
+  .todo-item-delete {
+    padding: 4px;
+    font-size: 15px;
+  }
 }

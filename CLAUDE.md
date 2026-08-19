@@ -22,7 +22,7 @@ This project is being built incrementally by feeding numbered prompts (in Korean
 4. **`4.prompt.md`** — `localStorage` persistence under the key `"todos"` (JSON-serialized array). Save on every mutation (add/edit/delete/toggle); load on page start; wrap parsing in try/catch and fall back to an empty array on corrupt/invalid data.
 5. **`5.prompt.md`** — polish pass: responsive layout down to ~480px, optional auto-sort of completed items to the bottom, clearer category color tags, empty-state message when the list/filter has no results, keyboard accessibility (Enter to add, Tab to reach checkboxes), and a final dedup/cleanup pass.
 
-As of the last update, stages 1–4 have been implemented (stage 5's polish pass is not yet done).
+As of the last update, all five stages have been implemented.
 
 Note: stage 4 persists the todo array under `localStorage["todos"]` as required, and additionally persists the active filter tab under a second key, `localStorage["todoFilter"]`, so the selected filter also survives a page reload — this second key isn't mandated by `4.prompt.md`'s requirement list but was added because that prompt's own verification step asks to confirm filter selection also survives a refresh.
 

@@ -84,8 +84,12 @@ function addTodo() {
   refresh();
 }
 
+function findTodoById(id) {
+  return todos.find((t) => t.id === id);
+}
+
 function toggleComplete(id) {
-  const todo = todos.find((t) => t.id === id);
+  const todo = findTodoById(id);
   if (!todo) return;
   todo.completed = !todo.completed;
   refresh();
@@ -99,7 +103,7 @@ function deleteTodo(id) {
 function editTodo(id, newTitle) {
   const title = newTitle.trim();
   if (!title) return;
-  const todo = todos.find((t) => t.id === id);
+  const todo = findTodoById(id);
   if (!todo) return;
   todo.title = title;
   refresh();
@@ -143,6 +147,7 @@ function createTodoItemEl(todo) {
   checkbox.type = "checkbox";
   checkbox.className = "todo-item-checkbox";
   checkbox.checked = todo.completed;
+  checkbox.setAttribute("aria-label", `${todo.title} 완료 여부`);
   checkbox.addEventListener("change", () => toggleComplete(todo.id));
 
   const title = document.createElement("span");
@@ -178,13 +183,34 @@ function getFilteredTodos() {
   );
 }
 
-// 렌더링: 현재 필터가 적용된 목록을 DOM에 그리기만 함
+// 완료된 항목을 목록 하단으로 정렬 (미완료/완료 각각 내부 순서는 유지)
+function sortForDisplay(list) {
+  return [...list].sort((a, b) => Number(a.completed) - Number(b.completed));
+}
+
+// 렌더링: 현재 필터가 적용된 목록을 정렬해 DOM에 그리기만 함
 function renderTodos() {
-  const visibleTodos = getFilteredTodos();
+  const visibleTodos = sortForDisplay(getFilteredTodos());
   todoListEl.innerHTML = "";
+
+  if (visibleTodos.length === 0) {
+    todoListEl.appendChild(createEmptyStateEl());
+    return;
+  }
+
   visibleTodos.forEach((todo) => {
     todoListEl.appendChild(createTodoItemEl(todo));
   });
+}
+
+function createEmptyStateEl() {
+  const li = document.createElement("li");
+  li.className = "empty-state";
+  li.textContent =
+    todos.length === 0
+      ? "할 일이 없습니다. 새로운 할 일을 추가해보세요."
+      : "해당 카테고리에 할 일이 없습니다.";
+  return li;
 }
 
 // 진행률: 필터와 무관하게 전체 todos 기준으로 계산
@@ -197,17 +223,27 @@ function updateProgress() {
   progressBarFill.style.width = `${percent}%`;
 }
 
-function refresh() {
+function syncFilterButtons() {
+  filterBtns.forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.filter === currentFilter);
+  });
+}
+
+// 목록/진행률만 다시 그림 (저장은 하지 않음 - 초기 로드 시 재사용)
+function render() {
   renderTodos();
   updateProgress();
+}
+
+// 데이터가 바뀌는 액션 끝에서 호출: 다시 그리고 저장까지 함께 수행
+function refresh() {
+  render();
   saveTodos();
 }
 
 function setFilter(filter) {
   currentFilter = filter;
-  filterBtns.forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.filter === filter);
-  });
+  syncFilterButtons();
   renderTodos();
   saveFilter();
 }
@@ -224,11 +260,8 @@ filterBtns.forEach((btn) => {
 function init() {
   todos = loadTodos();
   currentFilter = loadFilter();
-  filterBtns.forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.filter === currentFilter);
-  });
-  renderTodos();
-  updateProgress();
+  syncFilterButtons();
+  render();
 }
 
 init();
