@@ -221,6 +221,56 @@ body {
   font-size: 14px;
 }
 
+/* 완료된 항목 영역 */
+.completed-area {
+  margin-top: 16px;
+  border-top: 1px solid #e6e8eb;
+  padding-top: 8px;
+}
+
+.completed-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 4px;
+  border: none;
+  background: none;
+  color: #555;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.completed-toggle:disabled {
+  color: #ccc;
+  cursor: default;
+}
+
+.completed-toggle-label {
+  font-weight: 600;
+}
+
+.completed-count {
+  background-color: #e6e8eb;
+  color: #666;
+  font-size: 12px;
+  padding: 1px 8px;
+  border-radius: 10px;
+}
+
+.completed-toggle-icon {
+  margin-left: auto;
+  transition: transform 0.15s ease;
+}
+
+.completed-toggle.expanded .completed-toggle-icon {
+  transform: rotate(180deg);
+}
+
+.completed-list.collapsed {
+  display: none;
+}
+
 /* 반응형: 모바일 너비 */
 @media (max-width: 480px) {
   body {

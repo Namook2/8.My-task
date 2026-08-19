@@ -20,7 +20,7 @@ This project is being built incrementally by feeding numbered prompts (in Korean
 2. **`2.prompt.md`** — core data logic in `app.js`, in-memory only (no persistence yet): add, render, toggle-complete, inline edit, delete. Empty-title entries must be rejected.
 3. **`3.prompt.md`** — category filtering (전체/업무/개인/공부 tabs) and progress display (count + percentage). Progress is always computed from the full todo list, not the filtered view, and must update immediately on any state change. Filter logic and render logic must stay separate so switching filters never mutates the underlying data.
 4. **`4.prompt.md`** — `localStorage` persistence under the key `"todos"` (JSON-serialized array). Save on every mutation (add/edit/delete/toggle); load on page start; wrap parsing in try/catch and fall back to an empty array on corrupt/invalid data.
-5. **`5.prompt.md`** — polish pass: responsive layout down to ~480px, optional auto-sort of completed items to the bottom, clearer category color tags, empty-state message when the list/filter has no results, keyboard accessibility (Enter to add, Tab to reach checkboxes), and a final dedup/cleanup pass.
+5. **`5.prompt.md`** — polish pass: responsive layout down to ~480px, clearer category color tags, empty-state message when the list/filter has no results, keyboard accessibility (Enter to add, Tab to reach checkboxes), and a final dedup/cleanup pass. The prompt's own suggestion of auto-sorting completed items to the bottom of the same list (marked optional there) was superseded by a later, more specific user request — see below.
 
 As of the last update, all five stages have been implemented.
 
@@ -39,6 +39,15 @@ Todo items follow this shape (see `2.prompt.md`):
   createdAt: string   // ISO 8601
 }
 ```
+
+## Completed items live in a separate collapsible section, not inline
+
+Completed to-dos are not shown inline (sorted to the bottom) in `#todo-list` — they are split out entirely into a separate "완료된 항목" (Completed items) section below the main list, collapsed by default, that the user expands by clicking `#completed-toggle`. This was a deliberate follow-up request after the stage-5 pass initially implemented inline bottom-sorting instead; the inline approach was replaced, not layered on top of it. Key pieces in `app.js`:
+
+- `renderTodos()` splits the current filter's matches into `activeTodos` (rendered into `#todo-list`) and `completedTodos` (rendered into `#completed-list` via `renderCompletedList()`), rather than sorting one combined list.
+- `showCompleted` (module-level boolean, default `false`) tracks whether the section is expanded; `toggleCompletedSection()` flips it and toggles the `.collapsed` class on `#completed-list` plus `aria-expanded` on the toggle button.
+- The empty-state message in the main list now distinguishes "no matching to-dos at all" from "everything in this filter is done" (the latter points the user at the completed section) — see `createEmptyStateEl()`.
+- Un-checking a completed item (from inside the completed section) moves it back into the main list on the next render automatically, since both lists are derived fresh from `todos` on every `renderTodos()` call.
 
 ## Markup/CSS conventions established in stage 1
 

@@ -43,12 +43,30 @@
       <button class="filter-btn" type="button" data-filter="study">공부</button>
     </nav>
 
-    <!-- 할 일 목록 -->
+    <!-- 할 일 목록 (미완료 항목만 표시) -->
     <main class="list-area">
       <ul id="todo-list" class="todo-list">
         <!-- 할 일 항목이 여기에 동적으로 렌더링됩니다 -->
       </ul>
     </main>
+
+    <!-- 완료된 항목: 클릭해서 펼쳐야 보이는 별도 영역 -->
+    <section class="completed-area">
+      <button
+        id="completed-toggle"
+        class="completed-toggle"
+        type="button"
+        aria-expanded="false"
+        aria-controls="completed-list"
+      >
+        <span class="completed-toggle-label">완료된 항목</span>
+        <span id="completed-count" class="completed-count">0</span>
+        <span class="completed-toggle-icon" aria-hidden="true">▾</span>
+      </button>
+      <ul id="completed-list" class="todo-list completed-list collapsed">
+        <!-- 완료된 항목이 여기에 동적으로 렌더링됩니다 -->
+      </ul>
+    </section>
   </div>
 
   <script src="app.js"></script>

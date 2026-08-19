@@ -58,6 +58,12 @@ const todoListEl = document.getElementById("todo-list");
 const filterBtns = document.querySelectorAll(".filter-btn");
 const progressText = document.getElementById("progress-text");
 const progressBarFill = document.getElementById("progress-bar-fill");
+const completedToggleBtn = document.getElementById("completed-toggle");
+const completedListEl = document.getElementById("completed-list");
+const completedCountEl = document.getElementById("completed-count");
+
+// 완료된 항목 영역이 펼쳐져 있는지 여부 (기본은 접힘)
+let showCompleted = false;
 
 function createId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -183,34 +189,50 @@ function getFilteredTodos() {
   );
 }
 
-// 완료된 항목을 목록 하단으로 정렬 (미완료/완료 각각 내부 순서는 유지)
-function sortForDisplay(list) {
-  return [...list].sort((a, b) => Number(a.completed) - Number(b.completed));
-}
-
-// 렌더링: 현재 필터가 적용된 목록을 정렬해 DOM에 그리기만 함
+// 렌더링: 현재 필터를 적용한 뒤, 미완료 항목은 메인 목록에,
+// 완료된 항목은 별도의 "완료된 항목" 영역에 나눠서 그림
 function renderTodos() {
-  const visibleTodos = sortForDisplay(getFilteredTodos());
-  todoListEl.innerHTML = "";
+  const filtered = getFilteredTodos();
+  const activeTodos = filtered.filter((todo) => !todo.completed);
+  const completedTodos = filtered.filter((todo) => todo.completed);
 
-  if (visibleTodos.length === 0) {
-    todoListEl.appendChild(createEmptyStateEl());
-    return;
+  todoListEl.innerHTML = "";
+  if (activeTodos.length === 0) {
+    todoListEl.appendChild(createEmptyStateEl(filtered.length));
+  } else {
+    activeTodos.forEach((todo) => {
+      todoListEl.appendChild(createTodoItemEl(todo));
+    });
   }
 
-  visibleTodos.forEach((todo) => {
-    todoListEl.appendChild(createTodoItemEl(todo));
-  });
+  renderCompletedList(completedTodos);
 }
 
-function createEmptyStateEl() {
+function createEmptyStateEl(filteredTotal) {
   const li = document.createElement("li");
   li.className = "empty-state";
   li.textContent =
-    todos.length === 0
+    filteredTotal === 0
       ? "할 일이 없습니다. 새로운 할 일을 추가해보세요."
-      : "해당 카테고리에 할 일이 없습니다.";
+      : "모든 할 일을 완료했습니다! 완료된 항목은 아래에서 확인하세요.";
   return li;
+}
+
+function renderCompletedList(completedTodos) {
+  completedListEl.innerHTML = "";
+  completedTodos.forEach((todo) => {
+    completedListEl.appendChild(createTodoItemEl(todo));
+  });
+
+  completedCountEl.textContent = completedTodos.length;
+  completedToggleBtn.disabled = completedTodos.length === 0;
+}
+
+function toggleCompletedSection() {
+  showCompleted = !showCompleted;
+  completedListEl.classList.toggle("collapsed", !showCompleted);
+  completedToggleBtn.classList.toggle("expanded", showCompleted);
+  completedToggleBtn.setAttribute("aria-expanded", String(showCompleted));
 }
 
 // 진행률: 필터와 무관하게 전체 todos 기준으로 계산
@@ -256,6 +278,8 @@ todoInput.addEventListener("keydown", (e) => {
 filterBtns.forEach((btn) => {
   btn.addEventListener("click", () => setFilter(btn.dataset.filter));
 });
+
+completedToggleBtn.addEventListener("click", toggleCompletedSection);
 
 function init() {
   todos = loadTodos();
