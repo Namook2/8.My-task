@@ -156,19 +156,34 @@ body {
   color: #999;
 }
 
+.todo-item-edit-input {
+  flex: 1;
+  padding: 4px 6px;
+  border: 1px solid #4a90e2;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
 .todo-item-category {
   font-size: 12px;
   padding: 2px 8px;
   border-radius: 10px;
   color: #fff;
+  white-space: nowrap;
 }
 
+.todo-item-edit,
 .todo-item-delete {
   border: none;
   background: none;
   color: #aaa;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
+}
+
+.todo-item-edit:hover {
+  color: #4a90e2;
 }
 
 .todo-item-delete:hover {
