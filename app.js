@@ -16,12 +16,20 @@ const STORAGE_KEY = "todos";
 // 필터 선택도 새로고침 후 유지되도록 별도 키에 보조 저장
 const FILTER_STORAGE_KEY = "todoFilter";
 const FILTER_VALUES = ["all", "work", "personal", "study"];
+// 다크/라이트 모드 선택 저장 키
+const THEME_STORAGE_KEY = "theme";
 
 // 메모리 상의 할 일 목록 상태 (loadTodos()로 초기화됨)
 let todos = [];
 
 // 현재 선택된 필터 (all/work/personal/study) - 데이터 자체와는 분리된 뷰 상태
 let currentFilter = "all";
+
+// 검색어 (소문자로 정규화된 상태로 저장) - 데이터 자체와는 분리된 뷰 상태
+let searchQuery = "";
+
+// 완료된 항목 영역이 펼쳐져 있는지 여부 (기본은 접힘)
+let showCompleted = false;
 
 function loadTodos() {
   try {
@@ -51,28 +59,73 @@ function saveFilter() {
   localStorage.setItem(FILTER_STORAGE_KEY, currentFilter);
 }
 
+function loadTheme() {
+  try {
+    const raw = localStorage.getItem(THEME_STORAGE_KEY);
+    if (raw === "dark" || raw === "light") return raw;
+    const prefersDark =
+      window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches;
+    return prefersDark ? "dark" : "light";
+  } catch (e) {
+    return "light";
+  }
+}
+
+function saveTheme(theme) {
+  localStorage.setItem(THEME_STORAGE_KEY, theme);
+}
+
 const todoInput = document.getElementById("todo-input");
 const categorySelect = document.getElementById("category-select");
 const addBtn = document.getElementById("add-btn");
+const searchInput = document.getElementById("search-input");
 const todoListEl = document.getElementById("todo-list");
 const filterBtns = document.querySelectorAll(".filter-btn");
 const progressText = document.getElementById("progress-text");
 const progressBarFill = document.getElementById("progress-bar-fill");
+const remainingBadge = document.getElementById("remaining-badge");
 const completedToggleBtn = document.getElementById("completed-toggle");
 const completedListEl = document.getElementById("completed-list");
 const completedCountEl = document.getElementById("completed-count");
-
-// 완료된 항목 영역이 펼쳐져 있는지 여부 (기본은 접힘)
-let showCompleted = false;
+const clearCompletedBtn = document.getElementById("clear-completed-btn");
+const themeToggleInput = document.getElementById("theme-toggle-input");
+const toastContainer = document.getElementById("toast-container");
 
 function createId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+// 짧은 안내 메시지를 화면 하단에 잠깐 띄워 인터랙션 결과를 알려줌
+function showToast(message) {
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.textContent = message;
+  toastContainer.appendChild(toast);
+
+  requestAnimationFrame(() => toast.classList.add("visible"));
+
+  setTimeout(() => {
+    toast.classList.remove("visible");
+    toast.addEventListener("transitionend", () => toast.remove(), {
+      once: true,
+    });
+  }, 1800);
+}
+
+// 입력값이 유효하지 않을 때 흔들림 애니메이션으로 시각적 피드백을 줌
+function triggerShake(el) {
+  el.classList.remove("shake");
+  void el.offsetWidth;
+  el.classList.add("shake");
 }
 
 function addTodo() {
   const title = todoInput.value.trim();
   if (!title) {
     todoInput.focus();
+    triggerShake(todoInput);
+    showToast("할 일 제목을 입력해주세요.");
     return;
   }
 
@@ -88,6 +141,7 @@ function addTodo() {
   todoInput.value = "";
   todoInput.focus();
   refresh();
+  showToast("할 일을 추가했습니다.");
 }
 
 function findTodoById(id) {
@@ -104,6 +158,7 @@ function toggleComplete(id) {
 function deleteTodo(id) {
   todos = todos.filter((t) => t.id !== id);
   refresh();
+  showToast("삭제했습니다.");
 }
 
 function editTodo(id, newTitle) {
@@ -113,6 +168,20 @@ function editTodo(id, newTitle) {
   if (!todo) return;
   todo.title = title;
   refresh();
+}
+
+function clearCompleted() {
+  const completedCount = todos.filter((t) => t.completed).length;
+  if (completedCount === 0) return;
+
+  const confirmed = window.confirm(
+    `완료된 항목 ${completedCount}개를 모두 삭제하시겠습니까?`
+  );
+  if (!confirmed) return;
+
+  todos = todos.filter((t) => !t.completed);
+  refresh();
+  showToast("완료된 항목을 모두 삭제했습니다.");
 }
 
 function enterEditMode(li, todo) {
@@ -181,12 +250,24 @@ function createTodoItemEl(todo) {
   return li;
 }
 
-// 필터링: 데이터(todos)는 건드리지 않고 화면에 보여줄 부분집합만 계산
+// 필터링: 데이터(todos)는 건드리지 않고 카테고리 필터 + 검색어로
+// 화면에 보여줄 부분집합만 계산
 function getFilteredTodos() {
-  if (currentFilter === "all") return todos;
-  return todos.filter(
-    (todo) => CATEGORY_KEYS[todo.category] === currentFilter
-  );
+  let result = todos;
+
+  if (currentFilter !== "all") {
+    result = result.filter(
+      (todo) => CATEGORY_KEYS[todo.category] === currentFilter
+    );
+  }
+
+  if (searchQuery) {
+    result = result.filter((todo) =>
+      todo.title.toLowerCase().includes(searchQuery)
+    );
+  }
+
+  return result;
 }
 
 // 렌더링: 현재 필터를 적용한 뒤, 미완료 항목은 메인 목록에,
@@ -211,10 +292,17 @@ function renderTodos() {
 function createEmptyStateEl(filteredTotal) {
   const li = document.createElement("li");
   li.className = "empty-state";
-  li.textContent =
-    filteredTotal === 0
-      ? "할 일이 없습니다. 새로운 할 일을 추가해보세요."
-      : "모든 할 일을 완료했습니다! 완료된 항목은 아래에서 확인하세요.";
+
+  if (todos.length === 0) {
+    li.textContent = "할 일이 없습니다. 추가 해 보세요!";
+  } else if (filteredTotal === 0) {
+    li.textContent = searchQuery
+      ? "검색 결과가 없습니다."
+      : "해당 카테고리에 할 일이 없습니다.";
+  } else {
+    li.textContent = "모든 할 일을 완료했습니다! 완료된 항목은 아래에서 확인하세요.";
+  }
+
   return li;
 }
 
@@ -226,6 +314,7 @@ function renderCompletedList(completedTodos) {
 
   completedCountEl.textContent = completedTodos.length;
   completedToggleBtn.disabled = completedTodos.length === 0;
+  clearCompletedBtn.disabled = completedTodos.length === 0;
 }
 
 function toggleCompletedSection() {
@@ -235,14 +324,16 @@ function toggleCompletedSection() {
   completedToggleBtn.setAttribute("aria-expanded", String(showCompleted));
 }
 
-// 진행률: 필터와 무관하게 전체 todos 기준으로 계산
+// 진행률/남은 할 일 배지: 필터·검색과 무관하게 전체 todos 기준으로 계산
 function updateProgress() {
   const total = todos.length;
   const completedCount = todos.filter((todo) => todo.completed).length;
+  const remaining = total - completedCount;
   const percent = total === 0 ? 0 : Math.round((completedCount / total) * 100);
 
   progressText.textContent = `${total}개 중 ${completedCount}개 완료 (${percent}%)`;
   progressBarFill.style.width = `${percent}%`;
+  remainingBadge.textContent = `${remaining}개 남음`;
 }
 
 function syncFilterButtons() {
@@ -270,9 +361,29 @@ function setFilter(filter) {
   saveFilter();
 }
 
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  themeToggleInput.checked = theme === "dark";
+}
+
+function toggleTheme() {
+  const next =
+    document.documentElement.getAttribute("data-theme") === "dark"
+      ? "light"
+      : "dark";
+  applyTheme(next);
+  saveTheme(next);
+  showToast(next === "dark" ? "다크 모드로 전환했습니다." : "라이트 모드로 전환했습니다.");
+}
+
 addBtn.addEventListener("click", addTodo);
 todoInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") addTodo();
+});
+
+searchInput.addEventListener("input", () => {
+  searchQuery = searchInput.value.trim().toLowerCase();
+  renderTodos();
 });
 
 filterBtns.forEach((btn) => {
@@ -280,8 +391,35 @@ filterBtns.forEach((btn) => {
 });
 
 completedToggleBtn.addEventListener("click", toggleCompletedSection);
+clearCompletedBtn.addEventListener("click", clearCompleted);
+themeToggleInput.addEventListener("change", toggleTheme);
+
+// 키보드 단축키: Alt+N 입력창 포커스, Alt+1~4 카테고리 필터, Alt+0 다크모드 토글
+const SHORTCUT_FILTERS = { 1: "all", 2: "work", 3: "personal", 4: "study" };
+
+document.addEventListener("keydown", (e) => {
+  if (!e.altKey || e.ctrlKey || e.metaKey) return;
+
+  if (e.key.toLowerCase() === "n") {
+    e.preventDefault();
+    todoInput.focus();
+    return;
+  }
+
+  if (e.key === "0") {
+    e.preventDefault();
+    toggleTheme();
+    return;
+  }
+
+  if (SHORTCUT_FILTERS[e.key]) {
+    e.preventDefault();
+    setFilter(SHORTCUT_FILTERS[e.key]);
+  }
+});
 
 function init() {
+  applyTheme(loadTheme());
   todos = loadTodos();
   currentFilter = loadFilter();
   syncFilterButtons();
